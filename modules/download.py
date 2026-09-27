@@ -6,7 +6,7 @@ import time
 import platform
 import requests
 from typing import Tuple
-from config import STAGING_DIR, SOMEDL_CMD, YT_DLP_CMD
+from config import STAGING_DIR, SOMEDL_CMD, YT_DLP_CMD, YT_AUDIO_FORMAT
 
 class Transporter:
     def __init__(self):
@@ -125,7 +125,8 @@ class Transporter:
         self._log_to_system(f"[FALLBACK] SomeDL failed. Attempting yt-dlp download for {url}...")
         
         yt_dlp_cmd = YT_DLP_CMD + [
-            "-x", 
+            "-f", YT_AUDIO_FORMAT,   # Premium 256k first (see config.YT_AUDIO_FORMAT)
+            "-x",
             "--audio-format", "mp3", 
             "--audio-quality", "320K", 
             "-o", os.path.join(staging_path, "%(title)s.%(ext)s"), 

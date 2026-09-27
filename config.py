@@ -101,6 +101,11 @@ else:
 SOMEDL_CMD = [somedl_executable] + COOKIE_ARGS
 YT_DLP_CMD = ytdlp_base + COOKIE_ARGS
 
+# Premium audio first: 141 = 256k AAC, 774 = ~260k Opus; anything else is the free tier (~130k). Without this,
+# yt-dlp's own choice (plus --prefer-free-formats in the user's yt-dlp config) sometimes took the free 251 Opus
+# even when Premium formats were offered (seen 2026-09-27).
+YT_AUDIO_FORMAT = "141/774/bestaudio"
+
 # --- API KEYS ---
 ACOUSTID_API_KEY = os.getenv("ACOUSTID_API_KEY")
 INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY", "")

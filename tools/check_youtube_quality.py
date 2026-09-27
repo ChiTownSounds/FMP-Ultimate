@@ -15,7 +15,7 @@ import os, re, sys, subprocess, datetime
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 os.chdir(ROOT)
-from config import YT_DLP_CMD  # noqa: E402
+from config import YT_DLP_CMD, YT_AUDIO_FORMAT  # noqa: E402
 
 TEST_URL = "https://music.youtube.com/watch?v=2yOtVlq8qGc"   # Mya - Movin' On (official release)
 MIN_KBPS = 200
@@ -38,24 +38,25 @@ def notify(title, text):
 
 
 def main():
-    cmd = YT_DLP_CMD + ["-F", "--no-warnings", TEST_URL]
+    # Ask which format a real download would pick (same cookies, same format rule), without downloading.
+    cmd = YT_DLP_CMD + ["-f", YT_AUDIO_FORMAT, "-s", "--print", "PICKED %(format_id)s %(abr)s", "--no-warnings", TEST_URL]
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180,
                              creationflags=NO_WINDOW)
         out = (res.stdout or "") + (res.stderr or "")
     except Exception as e:
         out, res = f"could not run yt-dlp: {e}", None
-    rates = [int(m.group(1)) for line in out.splitlines() if "audio only" in line
-             for m in [re.search(r"\s(\d{2,3})k\s", line)] if m]
-    best = max(rates) if rates else 0
+    m = re.search(r"PICKED (\S+) ([0-9.]+)", out)
+    best = int(float(m.group(2))) if m else 0
+    picked = m.group(1) if m else "none"
     source = "firefox" if "--cookies-from-browser" in YT_DLP_CMD else "cookies.txt"
     signin = "sign in" in out.lower()
     ok = best >= MIN_KBPS and not signin
     stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     if ok:
-        line = f"{stamp}  OK    best audio {best}k (Premium) via {source}"
+        line = f"{stamp}  OK    downloads get format {picked} at {best}k (Premium) via {source}"
     else:
-        why = "YouTube asked to sign in" if signin else (f"best audio only {best}k" if best else "no formats returned")
+        why = "YouTube asked to sign in" if signin else (f"downloads would get format {picked} at only {best}k" if best else "no format selected")
         line = f"{stamp}  FAIL  {why} via {source} - downloads are at FREE quality until the YouTube sign-in is fixed"
         notify("FMP Ultimate: YouTube quality dropped",
                f"{why}. Sign Firefox back into the station YouTube Music account.")
