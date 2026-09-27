@@ -257,11 +257,17 @@ def is_inspirational_track(artist: str, title: str, album: str = "") -> bool:
         "williams brothers", "victorious army", "tri-city singers", "donald lawrence",
         "andraé crouch", "andrae crouch", "edwin hawkins", "walter hawkins", "tramaine hawkins",
         "georgia mass choir", "rance allen", "cantons", "jackson southernaires", "sensational nightingales",
-        "mighty clouds of joy", "lee williams", "spiritual qc", "canton spirituals"
+        "mighty clouds of joy", "lee williams", "spiritual qc", "canton spirituals",
+        # 2026-09-27 library check: gospel acts Apple files under R&B/Soul (or "African") or doesn't have
+        "karen clark-sheard", "karen clark sheard", "j moss", "brent jones", "kurt carr", "dorinda clark-cole",
+        "ricky dillard", "sounds of blackness", "youthful praise", "dan willis", "luther barnes"
     ]
     on_gospel_list = any(ga in artist_lower for ga in g_artists)
     church_words_in_artist = bool(
         re.search(r'\b(choir|mass choir|gospel|pastor|bishop|rev\.?|reverend|apostle|elder|evangelist)\b', artist_lower))
+    # Titles that are strong enough to overrule Apple's genre ("Rev. Luther Barnes" is filed R&B/Soul).
+    # "Bishop" is left out on purpose - "Bishop Briggs" is a pop act.
+    clergy_or_choir_artist = bool(re.search(r'\b(choir|pastor|rev\.?|reverend|apostle)\b', artist_lower))
 
     # 1. Apple Music's genre for THIS SONG decides when it knows the song (2026-09-25: 30 of 34 real cases
     #    right, vs 10 of 28 for the old title-keyword + MusicBrainz check, which routed "God's Plan",
@@ -274,8 +280,8 @@ def is_inspirational_track(artist: str, title: str, album: str = "") -> bool:
         if is_gospel_genre(song_genre):
             return True
         # a listed gospel act's crossover single (Mary Mary "Shackles" is filed R&B/Soul) is still gospel.
-        # Church words alone don't override Apple here - "Bishop Briggs" is a pop act.
-        return on_gospel_list
+        # Only clergy/choir titles override Apple here, not every church word - "Bishop Briggs" is a pop act.
+        return on_gospel_list or clergy_or_choir_artist
 
     # 2. Apple doesn't know the song: listed gospel act, or church words in the artist name
     #    ("Rev. Ernest Davis Jr.", "... Mass Choir", "Pastor Mike Jr.")
