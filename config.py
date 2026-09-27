@@ -86,12 +86,20 @@ else:
 
 COOKIES_FILE = os.path.join(BASE_DIR, "configs", "cookies.txt")
 
-if os.path.exists(COOKIES_FILE):
-    SOMEDL_CMD = [somedl_executable, "--cookies", COOKIES_FILE]
-    YT_DLP_CMD = ytdlp_base + ["--cookies", COOKIES_FILE]
+# Where YouTube sign-in cookies come from. On Windows, read them live from Firefox (signed into the station's
+# YouTube Music Premium account) so they never go stale; an exported cookies.txt goes stale silently - until
+# 2026-09-27 every download was free-tier 128k because the exported file had lost its youtube.com sign-in.
+# YT_COOKIES_SOURCE=file forces the exported file; the VM (no browser) always uses the file.
+# tools/check_youtube_quality.py checks daily that the Premium formats are still offered.
+_cookie_source = os.getenv("YT_COOKIES_SOURCE", "firefox" if platform.system() == "Windows" else "file").lower()
+if _cookie_source == "firefox":
+    COOKIE_ARGS = ["--cookies-from-browser", "firefox"]
+elif os.path.exists(COOKIES_FILE):
+    COOKIE_ARGS = ["--cookies", COOKIES_FILE]
 else:
-    SOMEDL_CMD = [somedl_executable, "--cookies-from-browser", "firefox"] 
-    YT_DLP_CMD = ytdlp_base + ["--cookies-from-browser", "firefox"]
+    COOKIE_ARGS = ["--cookies-from-browser", "firefox"]
+SOMEDL_CMD = [somedl_executable] + COOKIE_ARGS
+YT_DLP_CMD = ytdlp_base + COOKIE_ARGS
 
 # --- API KEYS ---
 ACOUSTID_API_KEY = os.getenv("ACOUSTID_API_KEY")
